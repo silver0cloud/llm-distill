@@ -1,1 +1,61 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
+[project]
+name = "llm-distill"
+version = "0.1.0"
+description = "Offline logit-based LLM knowledge distillation pipeline: capture teacher top-k logits, then train a student on them."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "torch>=2.2",
+    "transformers>=4.44",
+    "datasets>=2.20",
+    "accelerate>=0.33",
+    "safetensors>=0.4.3",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+# Faster teacher inference during logit capture
+capture = [
+    "vllm>=0.5",
+]
+# Memory-efficient student training
+train = [
+    "peft>=0.12",
+    "bitsandbytes>=0.43",
+    "deepspeed>=0.14",
+]
+# Experiment tracking
+logging = [
+    "wandb>=0.17",
+    "tensorboard>=2.17",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+distill-prepare = "distill.cli:prepare_data"
+distill-capture = "distill.cli:capture_logits"
+distill-train = "distill.cli:train"
+distill-eval = "distill.cli:evaluate"
+
+[tool.setuptools.packages.find]
+include = ["distill*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
