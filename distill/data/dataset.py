@@ -7,3 +7,28 @@ what all is to be added in here
 5. max_seq_len function - fitting the length
 6. sample_id - assigns each sample "sample_id".
 """
+
+
+import torch 
+from torch.utils.data import Dataset
+from datasets import load_dataset
+
+class DatasetLoader(Dataset):
+  def __init__(self, dataset_name="HuggingFaceH4/ultrachat_200k", split = "train_sft"):
+    self.dataset = load_dataset(dataset_name, split=split)
+
+  def __len__(self):
+    return len(self.dataset)
+
+  def __getitem__(self, idx):
+    item = self.dataset[idx]
+
+    messages = item["messages"]
+    return {
+      "messages" : messages
+    }
+
+if __name__ == "__main__":
+    loader = DatasetLoader()
+    print("Dataset loaded successfully!")
+    print("Running test : ", loader[0])
