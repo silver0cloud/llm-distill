@@ -1,1 +1,69 @@
+# Student training config
+# Used by: distill-train (scripts/train.py)
+# Must match the settings used in capture.yaml (top_k, temperature, tokenizer, seq len).
 
+project_name: my-distillation
+
+student:
+  path: Qwen/Qwen3-0.6B        # HF model id or local path
+  dtype: bfloat16
+  attn_implementation: sdpa
+  gradient_checkpointing: true
+  trust_remote_code: false
+  lora:                        # set enabled: true to train with LoRA instead of full fine-tuning
+    enabled: false
+    r: 64
+    alpha: 128
+    dropout: 0.05
+    target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+
+tokenizer:
+  path: Qwen/Qwen3-8B          # same tokenizer the teacher logits were captured with
+
+data:
+  tokenized_dir: data/tokenized
+  logits_dir: data/teacher_logits
+  manifest: data/teacher_logits/manifest.json
+  max_seq_len: 2048            # must equal capture.processing.max_seq_len
+  val_split: 0.01
+  num_workers: 4
+  seed: 42
+
+distillation:
+  top_k: 64                    # must equal capture.capture.top_k
+  temperature: 1.0             # must equal capture.capture.temperature
+  loss:
+    kl_weight: 1.0             # forward KL(teacher || student) over the top-k support
+    jsd_weight: 0.0            # optional symmetric alternative
+    ce_weight: 0.1             # hard-label cross-entropy on ground-truth tokens
+  renormalize_topk: true       # renormalize teacher probs over the stored top-k tokens
+  tail_handling: ignore        # ignore | uniform (how to treat mass outside top-k)
+
+training:
+  output_dir: outputs/my-distillation
+  epochs: 1
+  max_steps: null              # overrides epochs if set
+  per_device_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-5
+  lr_scheduler: cosine
+  warmup_ratio: 0.03
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  optimizer: adamw_torch       # adamw_torch | adamw_8bit (needs bitsandbytes)
+  bf16: true
+  seed: 42
+
+checkpointing:
+  save_steps: 500
+  save_total_limit: 3
+  resume_from: null            # path to a checkpoint dir, or "latest"
+
+eval:
+  eval_steps: 500
+  metrics: [perplexity, kl_to_teacher]
+
+logging:
+  log_every: 10
+  wandb: false
+  tensorboard: false
