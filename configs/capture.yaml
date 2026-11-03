@@ -1,1 +1,48 @@
+# Teacher logit capture config
+# Used by: distill-capture (scripts/capture_logits.py)
 
+project_name: my-distillation
+
+teacher:
+  path: Qwen/Qwen3-8B          # HF model id or local path
+  dtype: bfloat16              # bfloat16 | float16 | float32
+  device_map: auto             # "auto" spreads layers across available GPUs
+  attn_implementation: sdpa    # sdpa | flash_attention_2 (if installed)
+  trust_remote_code: false
+
+# Teacher and student MUST share this tokenizer for token-aligned distillation
+tokenizer:
+  path: Qwen/Qwen3-8B
+
+dataset:
+  name: HuggingFaceH4/ultrachat_200k   # HF dataset id, or set `files` below
+  split: train_sft
+  files: null                          # e.g. ["data/raw/my_data.jsonl"]
+  text_field: null                     # for plain-text datasets, e.g. "text"
+  messages_field: messages             # for chat datasets; applies chat template
+  max_samples: 50000                   # null = use everything
+  shuffle: true
+  seed: 42
+
+processing:
+  max_seq_len: 2048
+  pack_sequences: false                # true = concatenate samples to fill seq_len
+  mask_prompt_tokens: false            # true = only keep logits on assistant tokens
+
+capture:
+  batch_size: 4
+  top_k: 64                            # number of teacher logits stored per token position
+  temperature: 1.0                     # teacher softmax temperature used at capture time
+  store_dtype: float16                 # dtype for stored logit values (indices are int32)
+  store_logprobs: true                 # store log-probs (recommended) instead of raw logits
+  samples_per_shard: 1000              # one .safetensors shard per N samples
+  resume: true                         # skip shards that already exist
+
+output:
+  tokenized_dir: data/tokenized
+  logits_dir: data/teacher_logits
+  manifest: data/teacher_logits/manifest.json   # sample id -> shard -> offset
+
+logging:
+  log_every: 50
+  wandb: false
