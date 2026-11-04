@@ -7,11 +7,19 @@ what all is to be added in here
 5. max_seq_len function - fitting the length
 6. sample_id - assigns each sample "sample_id".
 """
-
-
+import hashlib
+import json
+from pathlib import Path
+import typing
 import torch 
 from torch.utils.data import Dataset
-from datasets import load_dataset
+from datasets import load_dataset, HFDataset, load_from_disk
+import transformers
+from transformers import AutoTokenizer
+from distill.capture.storage import ManifestReader, ShardReader
+
+def load_raw_dataset(cfg: DatasetCfg) -> HFDataset:
+  
 
 class DatasetLoader(Dataset):
   def __init__(self, dataset_name="HuggingFaceH4/ultrachat_200k", split = "train_sft"):
